@@ -1,0 +1,29 @@
+{
+  "name": "typed-t",
+  "version": "0.0.0-development",
+  "description": "generate typescript declarations for i18n.t() from json t9n files",
+  "main": "index.js",
+  "scripts": {
+    "test": "exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+ssh://git@github.com/Xiphe/typed-t.git"
+  },
+  "keywords": [
+    "i18n",
+    "translation",
+    "json",
+    "typescript",
+    "declarations",
+    "types",
+    "polyglot",
+    "codegen"
+  ],
+  "author": "Hannes Diercks <node@xiphe.net> (https://xiphe.net/)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Xiphe/typed-t/issues"
+  },
+  "homepage": "https://github.com/Xiphe/typed-t#readme"
+}
