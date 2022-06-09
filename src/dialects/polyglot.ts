@@ -186,7 +186,7 @@ export function generateTypes(
     suffix = defaultOpts.suffix,
     prefix = defaultOpts.prefix,
     names = {},
-  }: CreatePolyglotTypesOptions,
+  }: CreatePolyglotTypesOptions = {},
 ) {
   const [flatKeys, type] = flatten(t9n);
 
