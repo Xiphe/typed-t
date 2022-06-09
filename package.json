@@ -1,10 +1,17 @@
 {
   "name": "typed-t",
   "version": "0.0.0-development",
-  "description": "generate typescript declarations for i18n.t() from json t9n files",
-  "main": "index.js",
+  "description": "generate typescript declarations from json t9n files",
+  "main": "dist/index.cjs",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "exit 1"
+    "test": "node -r esbuild-register src/test.ts",
+    "build:decl": "tsc",
+    "build:esm": "npx esbuild src/index.ts --outfile=dist/index.js --bundle --format=esm --platform=node --target=node18 --external:typescript --external:cmpl",
+    "build:cjs": "npx esbuild src/index.ts --outfile=dist/index.cjs --bundle --format=cjs --platform=node --target=node14 --external:typescript --external:cmpl",
+    "build": "npm run build:decl && npm run build:esm && npm run build:cjs",
+    "prepare": "npm run test && npm run build"
   },
   "repository": {
     "type": "git",
@@ -25,5 +32,22 @@
   "bugs": {
     "url": "https://github.com/Xiphe/typed-t/issues"
   },
-  "homepage": "https://github.com/Xiphe/typed-t#readme"
+  "homepage": "https://github.com/Xiphe/typed-t#readme",
+  "devDependencies": {
+    "@types/diff": "5.0.2",
+    "@types/jsesc": "3.0.1",
+    "@types/node": "17.0.40",
+    "@types/node-polyglot": "2.4.2",
+    "colors": "1.4.0",
+    "diff": "5.1.0",
+    "esbuild-register": "3.3.3",
+    "memfs": "3.4.4",
+    "node-polyglot": "2.4.2",
+    "outdent": "0.8.0",
+    "types-node-test": "1.0.2"
+  },
+  "dependencies": {
+    "cmpl": "0.1.0",
+    "typescript": "4.7.3"
+  }
 }
