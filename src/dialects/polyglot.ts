@@ -83,68 +83,6 @@ const heritagePolyglot = f.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [
   ]),
 ]);
 
-const extnds = f.createMethodSignature(
-  undefined,
-  f.createIdentifier('extend'),
-  undefined,
-  undefined,
-  [
-    f.createParameterDeclaration(
-      undefined,
-      undefined,
-      undefined,
-      f.createIdentifier('phrases'),
-      undefined,
-      f.createTypeReferenceNode(f.createIdentifier('DeepPartial'), [
-        f.createTypeReferenceNode(f.createIdentifier('Phrases'), undefined),
-      ]),
-      undefined,
-    ),
-  ],
-  f.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
-);
-const rplc = f.createMethodSignature(
-  undefined,
-  f.createIdentifier('replace'),
-  undefined,
-  undefined,
-  [
-    f.createParameterDeclaration(
-      undefined,
-      undefined,
-      undefined,
-      f.createIdentifier('phrases'),
-      undefined,
-      f.createTypeReferenceNode(f.createIdentifier('Phrases'), undefined),
-      undefined,
-    ),
-  ],
-  f.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
-);
-const nset = f.createMethodSignature(
-  undefined,
-  f.createIdentifier('unset'),
-  undefined,
-  undefined,
-  [
-    f.createParameterDeclaration(
-      undefined,
-      undefined,
-      undefined,
-      f.createIdentifier('phrases'),
-      undefined,
-      f.createUnionTypeNode([
-        f.createTypeReferenceNode(f.createIdentifier('Phrase'), undefined),
-        f.createTypeReferenceNode(f.createIdentifier('DeepPartial'), [
-          f.createTypeReferenceNode(f.createIdentifier('Phrases'), undefined),
-        ]),
-      ]),
-      undefined,
-    ),
-  ],
-  f.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
-);
-
 export function createPolyglotTransform(opts: PolyglotOpts) {
   const { prefix, suffix } = Object.assign({}, defaultOpts, opts);
   if (prefix === delimiter || suffix === delimiter) {
@@ -185,10 +123,14 @@ export function generateTypes(
   {
     suffix = defaultOpts.suffix,
     prefix = defaultOpts.prefix,
-    names = {},
+    names: customNames = {},
   }: CreatePolyglotTypesOptions = {},
 ) {
   const [flatKeys, type] = flatten(t9n);
+  const names = {
+    ...customNames,
+    ...defaultOpts.names,
+  };
 
   const getParams = createInterpolationParamFactory(
     new RegExp(`^${escape(prefix)}`),
@@ -201,22 +143,92 @@ export function generateTypes(
   const phrase = f.createTypeAliasDeclaration(
     undefined,
     [f.createModifier(ts.SyntaxKind.ExportKeyword)],
-    names.phrase || defaultOpts.names.phrase,
+    names.phrase,
     undefined,
     f.createUnionTypeNode(flatKeys.map(([l]) => f.createLiteralTypeNode(l))),
   );
   const phrases = f.createTypeAliasDeclaration(
     undefined,
     [f.createModifier(ts.SyntaxKind.ExportKeyword)],
-    names.phrases || defaultOpts.names.phrases,
+    names.phrases,
     undefined,
     f.createTypeLiteralNode(type),
+  );
+  const nset = f.createMethodSignature(
+    undefined,
+    f.createIdentifier('unset'),
+    undefined,
+    undefined,
+    [
+      f.createParameterDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        f.createIdentifier('phrases'),
+        undefined,
+        f.createUnionTypeNode([
+          f.createTypeReferenceNode(
+            f.createIdentifier(names.phrase),
+            undefined,
+          ),
+          f.createTypeReferenceNode(f.createIdentifier('DeepPartial'), [
+            f.createTypeReferenceNode(
+              f.createIdentifier(names.phrases),
+              undefined,
+            ),
+          ]),
+        ]),
+        undefined,
+      ),
+    ],
+    f.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
+  );
+  const rplc = f.createMethodSignature(
+    undefined,
+    f.createIdentifier('replace'),
+    undefined,
+    undefined,
+    [
+      f.createParameterDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        f.createIdentifier('phrases'),
+        undefined,
+        f.createTypeReferenceNode(f.createIdentifier(names.phrases), undefined),
+        undefined,
+      ),
+    ],
+    f.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
+  );
+  const extnds = f.createMethodSignature(
+    undefined,
+    f.createIdentifier('extend'),
+    undefined,
+    undefined,
+    [
+      f.createParameterDeclaration(
+        undefined,
+        undefined,
+        undefined,
+        f.createIdentifier('phrases'),
+        undefined,
+        f.createTypeReferenceNode(f.createIdentifier('DeepPartial'), [
+          f.createTypeReferenceNode(
+            f.createIdentifier(names.phrases),
+            undefined,
+          ),
+        ]),
+        undefined,
+      ),
+    ],
+    f.createKeywordTypeNode(ts.SyntaxKind.VoidKeyword),
   );
 
   const polyglot = f.createInterfaceDeclaration(
     undefined,
     [f.createModifier(ts.SyntaxKind.ExportKeyword)],
-    names.polyglot || defaultOpts.names.polyglot,
+    names.polyglot,
     undefined,
     [heritagePolyglot],
     [extnds, rplc, nset].concat(
