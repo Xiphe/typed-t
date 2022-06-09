@@ -128,8 +128,8 @@ export function generateTypes(
 ) {
   const [flatKeys, type] = flatten(t9n);
   const names = {
-    ...customNames,
     ...defaultOpts.names,
+    ...customNames,
   };
 
   const getParams = createInterpolationParamFactory(
