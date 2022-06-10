@@ -8,6 +8,8 @@ export interface CreatePolyglotTypesOptions {
   };
   prefix?: string;
   suffix?: string;
+  heritageClauses?: ts.HeritageClause[];
+  additionalMembers?: ts.TypeElement[];
 }
 export interface PolyglotOpts extends CreatePolyglotTypesOptions {
   name: 'polyglot';
@@ -26,6 +28,20 @@ export const defaultOpts: Required<
   },
   prefix: '%{',
   suffix: '}',
+  additionalMembers: [],
+  heritageClauses: [
+    f.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [
+      f.createExpressionWithTypeArguments(f.createIdentifier('Omit'), [
+        f.createTypeReferenceNode(f.createIdentifier('P'), undefined),
+        f.createUnionTypeNode([
+          f.createLiteralTypeNode(f.createStringLiteral('extend', true)),
+          f.createLiteralTypeNode(f.createStringLiteral('t', true)),
+          f.createLiteralTypeNode(f.createStringLiteral('replace', true)),
+          f.createLiteralTypeNode(f.createStringLiteral('unset', true)),
+        ]),
+      ]),
+    ]),
+  ],
 };
 
 const delimiter = '||||';
@@ -71,17 +87,6 @@ export const deepPartial = f.createTypeAliasDeclaration(
     undefined,
   ),
 );
-const heritagePolyglot = f.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [
-  f.createExpressionWithTypeArguments(f.createIdentifier('Omit'), [
-    f.createTypeReferenceNode(f.createIdentifier('P'), undefined),
-    f.createUnionTypeNode([
-      f.createLiteralTypeNode(f.createStringLiteral('extend', true)),
-      f.createLiteralTypeNode(f.createStringLiteral('t', true)),
-      f.createLiteralTypeNode(f.createStringLiteral('replace', true)),
-      f.createLiteralTypeNode(f.createStringLiteral('unset', true)),
-    ]),
-  ]),
-]);
 
 export function createPolyglotTransform(opts: PolyglotOpts) {
   const { prefix, suffix } = Object.assign({}, defaultOpts, opts);
@@ -124,6 +129,8 @@ export function generateTypes(
     suffix = defaultOpts.suffix,
     prefix = defaultOpts.prefix,
     names: customNames = {},
+    additionalMembers = defaultOpts.additionalMembers,
+    heritageClauses = defaultOpts.heritageClauses,
   }: CreatePolyglotTypesOptions = {},
 ) {
   const [flatKeys, type] = flatten(t9n);
@@ -230,30 +237,32 @@ export function generateTypes(
     [f.createModifier(ts.SyntaxKind.ExportKeyword)],
     names.polyglot,
     undefined,
-    [heritagePolyglot],
-    [extnds, rplc, nset].concat(
-      flatKeys.map(([n, v]) =>
-        f.createMethodSignature(
-          undefined,
-          't',
-          undefined,
-          undefined,
-          [
-            f.createParameterDeclaration(
-              undefined,
-              undefined,
-              undefined,
-              f.createIdentifier('phrase'),
-              undefined,
-              f.createLiteralTypeNode(n),
-              undefined,
-            ),
-            ...getParams(v),
-          ],
-          f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+    heritageClauses,
+    additionalMembers
+      .concat([extnds, rplc, nset])
+      .concat(
+        flatKeys.map(([n, v]) =>
+          f.createMethodSignature(
+            undefined,
+            't',
+            undefined,
+            undefined,
+            [
+              f.createParameterDeclaration(
+                undefined,
+                undefined,
+                undefined,
+                f.createIdentifier('phrase'),
+                undefined,
+                f.createLiteralTypeNode(n),
+                undefined,
+              ),
+              ...getParams(v),
+            ],
+            f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+          ),
         ),
       ),
-    ),
   );
 
   return [phrase, phrases, polyglot];
