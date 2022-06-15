@@ -1,5 +1,10 @@
 import ts, { factory as f } from 'typescript';
 
+export interface TranslationMethod {
+  name: string | ts.PropertyName;
+  returnType: ts.TypeNode;
+  interpolationParamType: ts.TypeNode;
+}
 export interface CreatePolyglotTypesOptions {
   names?: {
     phrase?: string;
@@ -8,12 +13,22 @@ export interface CreatePolyglotTypesOptions {
   };
   prefix?: string;
   suffix?: string;
+  translationMethods?: TranslationMethod[];
   heritageClauses?: ts.HeritageClause[];
   additionalMembers?: ts.TypeElement[];
 }
 export interface PolyglotOpts extends CreatePolyglotTypesOptions {
   name: 'polyglot';
 }
+
+export const defaultTranslationMethod: TranslationMethod = {
+  name: 't',
+  returnType: f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+  interpolationParamType: f.createUnionTypeNode([
+    f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
+    f.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
+  ]),
+};
 
 export const defaultOpts: Required<
   Omit<PolyglotOpts, 'names'> & {
@@ -28,6 +43,7 @@ export const defaultOpts: Required<
   },
   prefix: '%{',
   suffix: '}',
+  translationMethods: [defaultTranslationMethod],
   additionalMembers: [],
   heritageClauses: [
     f.createHeritageClause(ts.SyntaxKind.ExtendsKeyword, [
@@ -129,6 +145,7 @@ export function generateTypes(
     suffix = defaultOpts.suffix,
     prefix = defaultOpts.prefix,
     names: customNames = {},
+    translationMethods = defaultOpts.translationMethods,
     additionalMembers = defaultOpts.additionalMembers,
     heritageClauses = defaultOpts.heritageClauses,
   }: CreatePolyglotTypesOptions = {},
@@ -238,31 +255,33 @@ export function generateTypes(
     names.polyglot,
     undefined,
     heritageClauses,
-    additionalMembers
-      .concat([extnds, rplc, nset])
-      .concat(
-        flatKeys.map(([n, v]) =>
-          f.createMethodSignature(
-            undefined,
-            't',
-            undefined,
-            undefined,
-            [
-              f.createParameterDeclaration(
-                undefined,
-                undefined,
-                undefined,
-                f.createIdentifier('phrase'),
-                undefined,
-                f.createLiteralTypeNode(n),
-                undefined,
-              ),
-              ...getParams(v),
-            ],
-            f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
-          ),
-        ),
-      ),
+    additionalMembers.concat([extnds, rplc, nset]).concat(
+      flatKeys.flatMap(([n, v]) => {
+        const params = getParams(v);
+        return translationMethods.map(
+          ({ name, returnType, interpolationParamType }) =>
+            f.createMethodSignature(
+              undefined,
+              name,
+              undefined,
+              undefined,
+              [
+                f.createParameterDeclaration(
+                  undefined,
+                  undefined,
+                  undefined,
+                  f.createIdentifier('phrase'),
+                  undefined,
+                  f.createLiteralTypeNode(n),
+                  undefined,
+                ),
+                ...params(interpolationParamType),
+              ],
+              returnType,
+            ),
+        );
+      }),
+    ),
   );
 
   return [phrase, phrases, polyglot];
@@ -275,7 +294,7 @@ function createInterpolationParamFactory(
   prefix: string,
   suffix: string,
 ) {
-  return (value: string): ts.ParameterDeclaration[] => {
+  return (value: string): ((t: ts.TypeNode) => ts.ParameterDeclaration[]) => {
     const allParams: string[] = Array.from(
       new Set<string>(
         (value.match(tokenRgx) || []).concat(
@@ -285,10 +304,14 @@ function createInterpolationParamFactory(
     );
 
     if (!allParams.length) {
-      return [];
+      return () => [];
     }
 
-    return [
+    const keys = allParams.map((p) =>
+      p.replace(tokenStart, '').replace(tokenEnd, ''),
+    );
+
+    return (t) => [
       f.createParameterDeclaration(
         undefined,
         undefined,
@@ -296,9 +319,7 @@ function createInterpolationParamFactory(
         'options',
         undefined,
         f.createTypeLiteralNode(
-          allParams.map((p) => {
-            const key = p.replace(tokenStart, '').replace(tokenEnd, '');
-
+          keys.map((key) => {
             return f.createPropertySignature(
               undefined,
               key.match(validPropName)
@@ -309,10 +330,7 @@ function createInterpolationParamFactory(
               undefined,
               key === 'smart_count'
                 ? f.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword)
-                : f.createUnionTypeNode([
-                    f.createKeywordTypeNode(ts.SyntaxKind.StringKeyword),
-                    f.createKeywordTypeNode(ts.SyntaxKind.NumberKeyword),
-                  ]),
+                : t,
             );
           }),
         ),

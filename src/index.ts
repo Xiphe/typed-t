@@ -7,7 +7,9 @@ import {
 } from './dialects/polyglot';
 export {
   CreatePolyglotTypesOptions,
+  TranslationMethod as PolyglotTranslationMethod,
   generateTypes as generatePolyglotTypes,
+  defaultTranslationMethod as defaultPolyglotTranslationMethod,
   importPolyglot,
   deepPartial,
 } from './dialects/polyglot';
