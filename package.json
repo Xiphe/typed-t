@@ -1,6 +1,6 @@
 {
   "name": "typed-t",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "generate typescript declarations from json t9n files",
   "main": "dist/index.cjs",
   "module": "dist/index.js",
